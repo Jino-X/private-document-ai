@@ -1,10 +1,13 @@
 import * as pdfjs from 'pdfjs-dist'
 import mammoth from 'mammoth'
 
-// Initialize PDF.js worker using CDN (unpkg)
+// PDF.js worker configuration
+// Due to Cross-Origin-Embedder-Policy (COEP: require-corp) needed for WebLLM/SharedArrayBuffer,
+// we cannot load external worker scripts. We use the legacy build which doesn't require a worker.
 if (typeof window !== 'undefined') {
-  const pdfjsVersion = pdfjs.version
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`
+  // Disable worker - PDF parsing will run on main thread
+  // This is acceptable for our use case (parsing documents, not rendering)
+  (pdfjs as any).GlobalWorkerOptions.workerSrc = undefined
 }
 
 export type SupportedFileType = 'pdf' | 'txt' | 'docx'
@@ -64,7 +67,17 @@ async function parsePDF(
   onProgress?: (progress: ParseProgress) => void
 ): Promise<ParseResult> {
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
+  
+  // Load PDF with worker disabled (runs on main thread)
+  // This avoids COEP issues with external worker scripts
+  const loadingTask = pdfjs.getDocument({
+    data: arrayBuffer,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    useSystemFonts: true,
+  })
+  
+  const pdf = await loadingTask.promise
   
   const pageCount = pdf.numPages
   let content = ''
