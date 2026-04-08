@@ -1,10 +1,10 @@
 import * as pdfjs from 'pdfjs-dist'
 import mammoth from 'mammoth'
 
-// Initialize PDF.js worker using local copy in public folder
+// Initialize PDF.js worker using CDN (unpkg)
 if (typeof window !== 'undefined') {
-  // Use the worker copied to public folder by webpack
-  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  const pdfjsVersion = pdfjs.version
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`
 }
 
 export type SupportedFileType = 'pdf' | 'txt' | 'docx'

@@ -92,9 +92,10 @@ export function calculateTFIDFSimilarity(query: string, document: string): numbe
   let queryMagnitude = 0
   let docMagnitude = 0
   
-  const allTerms = new Set([...queryVector.keys(), ...docVector.keys()])
+  const allTermsArray = Array.from(new Set([...Array.from(queryVector.keys()), ...Array.from(docVector.keys())]))
   
-  for (const term of allTerms) {
+  for (let i = 0; i < allTermsArray.length; i++) {
+    const term = allTermsArray[i]
     const qVal = queryVector.get(term) || 0
     const dVal = docVector.get(term) || 0
     

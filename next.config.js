@@ -1,6 +1,3 @@
-const CopyPlugin = require('copy-webpack-plugin')
-const path = require('path')
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config, { isServer }) => {
@@ -15,18 +12,6 @@ const nextConfig = {
         path: false,
         crypto: false,
       }
-      
-      // Copy pdf.js worker to public folder
-      config.plugins.push(
-        new CopyPlugin({
-          patterns: [
-            {
-              from: path.join(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
-              to: path.join(__dirname, 'public/pdf.worker.min.mjs'),
-            },
-          ],
-        })
-      )
     }
 
     return config
