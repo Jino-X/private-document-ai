@@ -1,8 +1,30 @@
 import * as pdfjs from 'pdfjs-dist'
 import mammoth from 'mammoth'
 
-// PDF.js worker is disabled - we'll use disableWorker option in getDocument()
-// This is required due to Cross-Origin-Embedder-Policy (COEP) blocking external scripts
+// PDF.js worker setup - we'll configure it lazily when needed
+// This avoids hydration issues and COEP problems
+let workerConfigured = false
+
+async function configurePdfWorker() {
+  if (workerConfigured || typeof window === 'undefined') return
+  
+  try {
+    // Fetch worker script and create blob URL to bypass COEP restrictions
+    const version = pdfjs.version
+    const workerUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`
+    
+    const response = await fetch(workerUrl)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    
+    pdfjs.GlobalWorkerOptions.workerSrc = blobUrl
+    workerConfigured = true
+  } catch (error) {
+    console.warn('Failed to load PDF.js worker, falling back to main thread:', error)
+    // Worker will run on main thread if this fails
+    workerConfigured = true
+  }
+}
 
 export type SupportedFileType = 'pdf' | 'txt' | 'docx'
 
@@ -60,16 +82,16 @@ async function parsePDF(
   file: File,
   onProgress?: (progress: ParseProgress) => void
 ): Promise<ParseResult> {
+  // Configure worker before first use
+  await configurePdfWorker()
+  
   const arrayBuffer = await file.arrayBuffer()
   
-  // Load PDF with worker disabled (runs on main thread)
-  // This avoids COEP issues with external worker scripts
-  // Using type assertion as disableWorker is not in newer type definitions but still works
+  // Load PDF document
   const loadingTask = pdfjs.getDocument({
     data: arrayBuffer,
-    disableWorker: true,
     useSystemFonts: true,
-  } as any)
+  })
   
   const pdf = await loadingTask.promise
   
