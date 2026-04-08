@@ -1,14 +1,8 @@
 import * as pdfjs from 'pdfjs-dist'
 import mammoth from 'mammoth'
 
-// PDF.js worker configuration
-// Due to Cross-Origin-Embedder-Policy (COEP: require-corp) needed for WebLLM/SharedArrayBuffer,
-// we cannot load external worker scripts. We use the legacy build which doesn't require a worker.
-if (typeof window !== 'undefined') {
-  // Disable worker - PDF parsing will run on main thread
-  // This is acceptable for our use case (parsing documents, not rendering)
-  (pdfjs as any).GlobalWorkerOptions.workerSrc = undefined
-}
+// PDF.js worker is disabled - we'll use disableWorker option in getDocument()
+// This is required due to Cross-Origin-Embedder-Policy (COEP) blocking external scripts
 
 export type SupportedFileType = 'pdf' | 'txt' | 'docx'
 
@@ -70,12 +64,12 @@ async function parsePDF(
   
   // Load PDF with worker disabled (runs on main thread)
   // This avoids COEP issues with external worker scripts
+  // Using type assertion as disableWorker is not in newer type definitions but still works
   const loadingTask = pdfjs.getDocument({
     data: arrayBuffer,
-    useWorkerFetch: false,
-    isEvalSupported: false,
+    disableWorker: true,
     useSystemFonts: true,
-  })
+  } as any)
   
   const pdf = await loadingTask.promise
   
